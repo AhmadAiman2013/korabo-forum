@@ -6,12 +6,12 @@ use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use serde_json::from_str;
 use std::sync::Arc;
 use aws_config::BehaviorVersion;
-use forum_core::{get_parameter, ForumError, ForumPostEvent, ForumRepository, S3Uploader};
+use forum_core::{get_parameter, ForumError, ForumPostEvent, ForumRepository, S3Store};
 
 #[derive(Clone)]
 pub struct AppState {
     pub repo: Arc<ForumRepository>,
-    pub s3: S3Uploader,
+    pub s3: S3Store,
 }
 
 #[tokio::main]
@@ -29,10 +29,9 @@ async fn main () -> Result<(), Error> {
 
     let ssm_value = get_parameter(&ssm_client, "/korabo/prod/sqs/forum").await?;
     let bucket = ssm_value.first().cloned().expect("S3 bucket not found in SSM parameter");
-    let cdn = ssm_value.last().cloned().expect("CDN URL not found in SSM parameter");
 
     let s3_client = S3Client::new(&config);
-    let s3 = S3Uploader::new(s3_client, bucket, cdn);
+    let s3 = S3Store::new(s3_client, bucket);
 
     let state = AppState {
         repo,

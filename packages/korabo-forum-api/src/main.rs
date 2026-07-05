@@ -10,10 +10,14 @@ use axum::Router;
 use axum::http::Method;
 use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
 use axum::routing::{get, post};
-use forum_core::{ForumRepository, S3Uploader, SqsClient, get_parameter};
+use forum_core::{
+    CdnSigner, ForumRepository, S3Store, S3Uploader, SqsClient, get_parameter, get_parameter_secret,
+};
 use jwt::JwtPublicKey;
 use lambda_http::tracing::init_default_subscriber;
 use lambda_http::{Error, run};
+use p256::SecretKey;
+use p256::ecdsa::SigningKey;
 use std::env::var;
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
@@ -37,26 +41,44 @@ async fn main() -> Result<(), Error> {
     let repo = Arc::new(ForumRepository::new(client, forums_table, members_table));
 
     let ssm_client = aws_sdk_ssm::Client::new(&config);
+    let ( ssm_value_1, ssm_value_2, ssm_value_3 ) = tokio::join!(
+        get_parameter(&ssm_client, "/korabo/prod/sqs/forum"),
+        get_parameter_secret(&ssm_client, "/korabo/prod/sqs/forum-secret"),
+        get_parameter(&ssm_client, "/korabo/prod/sqs/forum-queue")
+    );
 
-    let ssm_value = get_parameter(&ssm_client, "/korabo/prod/sqs/forum").await?;
-    let bucket = ssm_value
+    let ssm_value_1 = ssm_value_1?;
+    let ssm_value_2 = ssm_value_2?;
+    let ssm_value_3 = ssm_value_3?;
+    
+    let bucket = ssm_value_1
         .first()
         .cloned()
         .expect("S3 bucket not found in SSM parameter");
-    let cdn = ssm_value
+    let cf_key_pair_id = ssm_value_1
+        .get(1)
+        .cloned()
+        .expect("CloudFront key pair ID not found in SSM parameter");
+    let cdn_domain = ssm_value_1
         .last()
         .cloned()
         .expect("CDN URL not found in SSM parameter");
     let s3_client = S3Client::new(&config);
-    let store = S3Uploader::new(s3_client, bucket, cdn);
+    let store = S3Store::new(s3_client, bucket);
+
+    let secret_key = SecretKey::from_sec1_pem(&ssm_value_2).expect("Failed to parse secret key");
+    let cf_private_key = SigningKey::from(secret_key);
+    let cdn = CdnSigner::new(cdn_domain, cf_private_key, cf_key_pair_id, 3600);
+
+    let s3 = S3Uploader::new(store, cdn);
 
     let sqs = aws_sdk_sqs::Client::new(&config);
-    let ssm_value = get_parameter(&ssm_client, "/korabo/prod/sqs/forum-queue").await?;
-    let queue_url_noti = ssm_value
+
+    let queue_url_noti = ssm_value_3
         .first()
         .cloned()
         .expect("Noti queue not found in SSM parameter");
-    let queue_url_cm_del = ssm_value
+    let queue_url_cm_del = ssm_value_3
         .last()
         .cloned()
         .expect("Forum queue URL not found in SSM parameter");
@@ -80,7 +102,7 @@ async fn main() -> Result<(), Error> {
 
     let state = AppState {
         repo,
-        store,
+        s3,
         queue,
         jwt,
     };

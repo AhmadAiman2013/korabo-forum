@@ -11,7 +11,7 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct AppState {
     pub repo: Arc<ForumRepository>,
-    pub store: S3Uploader,
+    pub s3: S3Uploader,
     pub queue: SqsClient,
     pub jwt: JwtPublicKey,
 }
@@ -50,7 +50,7 @@ pub async fn create_post_handler(
         .create_post(&group_id, user_id, &title, &body, attachments)
         .await?;
 
-    post.attachments = state.store.hydrate(post.attachments);
+    post.attachments = state.s3.cdn.hydrate(post.attachments);
 
     state
         .queue
@@ -86,7 +86,7 @@ pub async fn update_post_handler(
         .update_post(&post_id, user_id, &title, &body, attachments)
         .await?;
 
-    post.attachments = state.store.hydrate(post.attachments);
+    post.attachments = state.s3.cdn.hydrate(post.attachments);
 
     state
         .queue
@@ -127,7 +127,7 @@ pub async fn list_posts_handler(
     let (mut posts, next_cursor) = state.repo.get_post_page(&group_id, cursor, limit).await?;
 
     posts.iter_mut().for_each(|p| {
-        p.attachments = state.store.hydrate(take(&mut p.attachments));
+        p.attachments = state.s3.cdn.hydrate(take(&mut p.attachments));
     });
 
     Ok((
@@ -185,7 +185,7 @@ pub async fn create_comment_handler(
         .create_comment(&post_id, user_id, &body, attachments)
         .await?;
 
-    comment.attachments = state.store.hydrate(comment.attachments);
+    comment.attachments = state.s3.cdn.hydrate(comment.attachments);
 
     state
         .queue
@@ -221,7 +221,7 @@ pub async fn list_comments_handler(
         .await?;
 
     comments.iter_mut().for_each(|c| {
-        c.attachments = state.store.hydrate(take(&mut c.attachments));
+        c.attachments = state.s3.cdn.hydrate(take(&mut c.attachments));
     });
 
     Ok((
@@ -256,7 +256,7 @@ pub async fn update_comment_handler(
         .update_comment(&post_id, &comment_sk, user_id, &body, attachments)
         .await?;
 
-    comment.attachments = state.store.hydrate(comment.attachments);
+    comment.attachments = state.s3.cdn.hydrate(comment.attachments);
 
     state
         .queue
@@ -322,6 +322,7 @@ pub async fn presign_upload_handler(
     );
 
     let presigned = state
+        .s3
         .store
         .presign_upload(&key, &content_type, content_length)
         .await?;

@@ -18,3 +18,4 @@ aws-sdk-s3 = {workspace = true}
 aws-sdk-sqs = {workspace = true}
 tokio = {workspace = true}
 lambda_http = {workspace = true}
+p256 = {workspace = true}

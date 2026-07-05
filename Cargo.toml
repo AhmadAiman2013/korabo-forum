@@ -27,3 +27,4 @@ jwt = { git = "https://github.com/AhmadAiman2013/korabo-common.git", tag = "0.9.
 lambda_http = "1.2.1"
 lambda_runtime = "1.2.1"
 tower-http = { version = "0.7.0", features = ["cors"] }
+p256 = { version = "0.14", features = ["ecdsa"] }

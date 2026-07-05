@@ -1,25 +1,35 @@
 use crate::errors::ForumError;
 use crate::types::{Attachment, PresignedUpload};
-use aws_sdk_s3::presigning::PresigningConfig;
 use aws_sdk_s3::Client as S3Client;
-use std::time::Duration;
+use aws_sdk_s3::presigning::PresigningConfig;
+use base64::{Engine as _, engine::general_purpose};
+use p256::ecdsa::signature::Signer;
+use p256::ecdsa::{Signature, SigningKey};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 pub const MAX_UPLOAD_BYTES: i64 = 4 * 1024 * 1024; // 4MB cap
 
 #[derive(Clone)]
 pub struct S3Uploader {
-    client: S3Client,
-    bucket: String,
-    cdn_domain: String,
+    pub store: S3Store,
+    pub cdn: CdnSigner,
 }
 
 impl S3Uploader {
-    pub fn new(client: S3Client, bucket: String, cdn_domain: String) -> Self {
-        Self {
-            client,
-            bucket,
-            cdn_domain,
-        }
+    pub fn new(store: S3Store, cdn: CdnSigner) -> Self {
+        Self { store, cdn }
+    }
+}
+
+#[derive(Clone)]
+pub struct S3Store {
+    client: S3Client,
+    bucket: String,
+}
+
+impl S3Store {
+    pub fn new(client: S3Client, bucket: String) -> Self {
+        Self { client, bucket }
     }
 
     /// Issues a presigned PUT. `content_length` is signed in to the request, so the
@@ -62,7 +72,7 @@ impl S3Uploader {
     pub async fn delete(&self, keys: &Vec<String>) -> Result<(), ForumError> {
         for key in keys {
             self.client
-            .delete_object()
+                .delete_object()
                 .bucket(&self.bucket)
                 .key(key)
                 .send()
@@ -71,14 +81,66 @@ impl S3Uploader {
         }
         Ok(())
     }
+}
 
-    pub fn attachment_url(&self, key: &str) -> String {
-        format!("https://{}/{}", self.cdn_domain, key)
+#[derive(Clone)]
+pub struct CdnSigner {
+    cdn_domain: String,
+    cf_private_key: SigningKey,
+    cf_key_pair_id: String,
+    cf_url_ttl_secs: u64,
+}
+
+impl CdnSigner {
+    pub fn new(
+        cdn_domain: String,
+        cf_private_key: SigningKey,
+        cf_key_pair_id: String,
+        cf_url_ttl_secs: u64,
+    ) -> Self {
+        Self {
+            cdn_domain,
+            cf_private_key,
+            cf_key_pair_id,
+            cf_url_ttl_secs,
+        }
+    }
+
+    pub fn sign_url(&self, key: &str) -> Result<String, ForumError> {
+        let expires = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+            + self.cf_url_ttl_secs;
+
+        let resource_url = format!("https://{}/{}", self.cdn_domain, key);
+        let policy = format!(
+            r#"{{"Statement":[{{"Resource":"{resource_url}","Condition":{{"DateLessThan":{{"AWS:EpochTime":{expires}}}}}}}]}}"#
+        );
+
+        let signature: Signature = self.cf_private_key.sign(policy.as_bytes());
+
+        let cf_b64 = |bytes: &[u8]| {
+            general_purpose::STANDARD
+                .encode(bytes)
+                .replace('+', "-")
+                .replace('=', "_")
+                .replace('/', "~")
+        };
+
+        let policy_b64 = cf_b64(policy.as_bytes());
+        // CloudFront expects the DER-encoded signature for ECDSA keys
+        let sig_b64 = cf_b64(signature.to_der().as_bytes());
+
+        Ok(format!(
+            "{resource_url}?Policy={policy_b64}&Signature={sig_b64}&Key-Pair-Id={}",
+            self.cf_key_pair_id
+        ))
     }
 
     pub fn hydrate(&self, mut attachments: Vec<Attachment>) -> Vec<Attachment> {
         for a in attachments.iter_mut() {
-            a.url = Some(self.attachment_url(&a.key));
+            a.url = self.sign_url(&a.key).ok();
         }
         attachments
     }
