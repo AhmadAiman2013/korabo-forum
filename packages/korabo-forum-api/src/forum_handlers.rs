@@ -1,5 +1,5 @@
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use forum_core::{Attachment, CreateCommentRequest, CreatePostRequest, ForumError, ForumEvent, ForumRepository, ListCommentsRequest, ListPostsRequest, PresignUploadRequest, ResponseError, S3Uploader, SqsClient, UpdateCommentRequest, UpdatePostRequest};
 use jwt::{AuthClaims, JwtPublicKey};
@@ -113,14 +113,14 @@ pub async fn update_post_handler(
 pub async fn list_posts_handler(
     State(state): State<AppState>,
     AuthClaims(claims): AuthClaims,
-    Json(body): Json<ListPostsRequest>,
+    Query(params): Query<ListPostsRequest>,
 ) -> Result<(StatusCode, Json<Value>), ResponseError> {
     let user_id = &claims.sub;
     let ListPostsRequest {
         group_id,
         cursor,
         limit,
-    } = body;
+    } = params;
 
     state.repo.assert_group_member(&group_id, user_id).await?;
 
@@ -204,14 +204,14 @@ pub async fn list_comments_handler(
     State(state): State<AppState>,
     AuthClaims(claims): AuthClaims,
     Path(post_id): Path<String>,
-    Json(body): Json<ListCommentsRequest>,
+    Query(params): Query<ListCommentsRequest>,
 ) -> Result<(StatusCode, Json<Value>), ResponseError> {
     let user_id = &claims.sub;
     let ListCommentsRequest {
         group_id,
         cursor,
         limit,
-    } = body;
+    } = params;
 
     state.repo.assert_group_member(&group_id, user_id).await?;
 
