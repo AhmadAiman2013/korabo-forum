@@ -20,4 +20,3 @@ tokio = {workspace = true}
 lambda_http = {workspace = true}
 p256 = {workspace = true}
 ws-core = {workspace = true}
-group-core = {workspace = true}

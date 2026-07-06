@@ -1300,7 +1300,6 @@ dependencies = [
  "axum",
  "base64 0.22.1",
  "chrono",
- "group-core",
  "lambda_http",
  "p256 0.14.0",
  "serde",
