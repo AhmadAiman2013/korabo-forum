@@ -1,7 +1,7 @@
 use crate::errors::ForumError;
-use crate::types::{ForumEvent};
+use ws_core::types::SqsNotificationEvent;
 use aws_sdk_sqs::Client;
-use crate::ForumPostEvent;
+use crate::ForumEvent;
 
 #[derive(Clone)]
 pub struct SqsClient {
@@ -15,9 +15,9 @@ impl SqsClient {
         Self { client, queue_url_noti, queue_url_cm_del }
     }
 
-    pub async fn publish_sqs_event(
+    pub async fn publish_sqs_event_notification(
         &self,
-        event: &ForumEvent,
+        event: &SqsNotificationEvent,
     ) -> Result<(), ForumError> {
         let body = serde_json::to_string(event)?;
 
@@ -32,9 +32,9 @@ impl SqsClient {
         Ok(())
     }
 
-    pub async fn publish_sqs_event_deleted(
+    pub async fn publish_sqs_event(
         &self,
-        event: &ForumPostEvent,
+        event: &ForumEvent,
     ) -> Result<(), ForumError> {
         let body = serde_json::to_string(event)?;
 

@@ -3,6 +3,12 @@
 version = 4
 
 [[package]]
+name = "adler2"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
+
+[[package]]
 name = "aho-corasick"
 version = "1.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -162,6 +168,31 @@ dependencies = [
  "pin-project-lite",
  "tracing",
  "uuid",
+]
+
+[[package]]
+name = "aws-sdk-apigatewaymanagement"
+version = "1.103.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d01be5ed460c55cfa9ef62a8246755bbec7b37c1d5d6aa03112da6dc52829f3"
+dependencies = [
+ "arc-swap",
+ "aws-credential-types",
+ "aws-runtime",
+ "aws-smithy-async",
+ "aws-smithy-http",
+ "aws-smithy-json",
+ "aws-smithy-observability",
+ "aws-smithy-runtime",
+ "aws-smithy-runtime-api",
+ "aws-smithy-types",
+ "aws-types",
+ "bytes",
+ "fastrand",
+ "http 0.2.12",
+ "http 1.4.2",
+ "regex-lite",
+ "tracing",
 ]
 
 [[package]]
@@ -627,11 +658,14 @@ checksum = "d02c123e89527e7b424f74f52d11be0d17ef2887819323a42dcae1c7630ca53d"
 dependencies = [
  "base64 0.22.1",
  "bytes",
+ "chrono",
+ "flate2",
  "http 1.4.2",
  "http-body 1.0.1",
  "http-serde",
  "query_map",
  "serde",
+ "serde_dynamo",
  "serde_json",
  "serde_with",
 ]
@@ -822,6 +856,14 @@ dependencies = [
 name = "claims"
 version = "0.8.0"
 source = "git+https://github.com/AhmadAiman2013/korabo-common.git?tag=0.9.0#88162be4b9b27b1ea2194e7ba379f32d089e75ee"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "claims"
+version = "0.10.0"
+source = "git+https://github.com/AhmadAiman2013/korabo-common.git?tag=0.11.0#edea0a90649b011f6b4c6f48c4a57147254c596f"
 dependencies = [
  "serde",
 ]
@@ -1217,6 +1259,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5baebc0774151f905a1a2cc41989300b1e6fbb29aff0ceffa1064fdd3088d582"
 
 [[package]]
+name = "flate2"
+version = "1.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "843fba2746e448b37e26a819579957415c8cef339bf08564fe8b7ddbd959573c"
+dependencies = [
+ "crc32fast",
+ "miniz_oxide",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1248,6 +1300,7 @@ dependencies = [
  "axum",
  "base64 0.22.1",
  "chrono",
+ "group-core",
  "lambda_http",
  "p256 0.14.0",
  "serde",
@@ -1256,6 +1309,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "uuid",
+ "ws-core",
 ]
 
 [[package]]
@@ -1418,6 +1472,25 @@ dependencies = [
  "ff 0.14.0",
  "rand_core 0.10.1",
  "subtle",
+]
+
+[[package]]
+name = "group-core"
+version = "0.2.0"
+source = "git+https://github.com/AhmadAiman2013/korabo-groups?tag=0.2.0#2a2790933c63cbc637660b0a003279abf4d135ef"
+dependencies = [
+ "aws-sdk-dynamodb",
+ "aws-sdk-sqs",
+ "aws-sdk-ssm",
+ "axum",
+ "http 1.4.2",
+ "jwt 0.9.0",
+ "lambda_http",
+ "serde",
+ "serde_dynamo",
+ "serde_json",
+ "thiserror",
+ "ws-core",
 ]
 
 [[package]]
@@ -1906,7 +1979,20 @@ version = "0.9.0"
 source = "git+https://github.com/AhmadAiman2013/korabo-common.git?tag=0.9.0#88162be4b9b27b1ea2194e7ba379f32d089e75ee"
 dependencies = [
  "axum",
- "claims",
+ "claims 0.8.0",
+ "jsonwebtoken",
+ "serde_json",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
+name = "jwt"
+version = "0.10.0"
+source = "git+https://github.com/AhmadAiman2013/korabo-common.git?tag=0.11.0#edea0a90649b011f6b4c6f48c4a57147254c596f"
+dependencies = [
+ "axum",
+ "claims 0.10.0",
  "jsonwebtoken",
  "serde_json",
  "thiserror",
@@ -1924,7 +2010,7 @@ dependencies = [
  "aws-sdk-ssm",
  "axum",
  "forum-core",
- "jwt",
+ "jwt 0.9.0",
  "lambda_http",
  "p256 0.14.0",
  "serde_json",
@@ -1940,12 +2026,17 @@ dependencies = [
  "aws-config",
  "aws-sdk-dynamodb",
  "aws-sdk-s3",
+ "aws-sdk-sqs",
  "aws-sdk-ssm",
  "aws_lambda_events",
+ "chrono",
  "forum-core",
+ "group-core",
  "lambda_runtime",
  "serde_json",
  "tokio",
+ "uuid",
+ "ws-core",
 ]
 
 [[package]]
@@ -2086,6 +2177,16 @@ name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
+
+[[package]]
+name = "miniz_oxide"
+version = "0.8.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fa76a2c86f704bdb222d66965fb3d63269ce38518b83cb0575fca855ebb6316"
+dependencies = [
+ "adler2",
+ "simd-adler32",
+]
 
 [[package]]
 name = "mio"
@@ -2851,6 +2952,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "simd-adler32"
+version = "0.3.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "703d5c7ef118737c72f1af64ad2f6f8c5e1921f818cdcb97b8fe6fc69bf66214"
+
+[[package]]
 name = "simple_asn1"
 version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3540,6 +3647,24 @@ name = "writeable"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ffae5123b2d3fc086436f8834ae3ab053a283cfac8fe0a0b8eaae044768a4c4"
+
+[[package]]
+name = "ws-core"
+version = "0.3.0"
+source = "git+https://github.com/AhmadAiman2013/korabo-ws.git?tag=0.3.0#acbe7055a7c2dbfed49726cf804360b56b59b813"
+dependencies = [
+ "aws-sdk-apigatewaymanagement",
+ "aws-sdk-dynamodb",
+ "aws_lambda_events",
+ "claims 0.10.0",
+ "jwt 0.10.0",
+ "serde",
+ "serde_dynamo",
+ "serde_json",
+ "thiserror",
+ "time",
+ "uuid",
+]
 
 [[package]]
 name = "xmlparser"

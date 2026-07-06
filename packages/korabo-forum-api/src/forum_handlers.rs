@@ -1,7 +1,7 @@
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
-use forum_core::{Attachment, CreateCommentRequest, CreatePostRequest, ForumError, ForumEvent, ForumPostEvent, ForumRepository, ListCommentsRequest, ListPostsRequest, PresignUploadRequest, ResponseError, S3Uploader, SqsClient, UpdateCommentRequest, UpdatePostRequest};
+use forum_core::{Attachment, CreateCommentRequest, CreatePostRequest, ForumError, ForumEvent, ForumRepository, ListCommentsRequest, ListPostsRequest, PresignUploadRequest, ResponseError, S3Uploader, SqsClient, UpdateCommentRequest, UpdatePostRequest};
 use jwt::{AuthClaims, JwtPublicKey};
 use serde_json::{Value, json};
 use std::collections::HashSet;
@@ -156,7 +156,7 @@ pub async fn delete_post_handler(
 
     state
         .queue
-        .publish_sqs_event_deleted(&ForumPostEvent::PostDeleted {
+        .publish_sqs_event(&ForumEvent::PostDeleted {
             post_id: post_id.clone(),
             post_attachments: deleted_attachments,
         })
@@ -339,7 +339,7 @@ async fn send_deleted_attachment_sqs(
 
         state
             .queue
-            .publish_sqs_event_deleted(&ForumPostEvent::AttachmentsDeleted {
+            .publish_sqs_event(&ForumEvent::AttachmentsDeleted {
                 deleted_attachments: keys,
             })
             .await?;

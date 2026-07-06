@@ -204,14 +204,8 @@ pub enum ForumEvent {
         post_id: String,
         group_id: String,
         author_id: String,
-    }
+    },
 
-
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "event_type")]
-pub enum ForumPostEvent {
     PostDeleted {
         post_id: String,
         post_attachments: Vec<Attachment>,

@@ -15,6 +15,7 @@ use axum::http::StatusCode;
 use axum::Json;
 use axum::response::{IntoResponse, Response};
 use base64::DecodeError;
+use group_core::DynamoDBError;
 use lambda_http::tracing::error;
 use serde_dynamo::Error;
 use serde_json::{json, Error as SerdeJsonError};
@@ -75,6 +76,9 @@ pub enum ForumError {
 
     #[error("Not found: {0}")]
     NotFound(String),
+
+    #[error("Group Core Error: {0}")]
+    GroupError(#[from] DynamoDBError)
 }
 
 #[derive(Debug, Error)]
