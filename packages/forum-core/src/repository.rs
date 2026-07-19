@@ -291,7 +291,8 @@ impl ForumRepository {
             .index_name("gsi1")
             .key_condition_expression("GSI1PK = :gsi1pk")
             .expression_attribute_values(":gsi1pk", gsi1pk)
-            .filter_expression("attribute_not_exists(deleted)")
+            .filter_expression("deleted = :false_val")
+            .expression_attribute_values(":false_val", AttributeValue::Bool(false))
             .scan_index_forward(false)
             .limit(limit);
 
