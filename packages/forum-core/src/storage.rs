@@ -133,7 +133,7 @@ impl CdnSigner {
         let sig_b64 = cf_b64(signature.to_der().as_bytes());
 
         Ok(format!(
-            "{resource_url}?Policy={policy_b64}&Signature={sig_b64}&Key-Pair-Id={}",
+            "{resource_url}?Policy={policy_b64}&Signature={sig_b64}&Key-Pair-Id={}&Hash-Algorithm=SHA256",
             self.cf_key_pair_id
         ))
     }
