@@ -9,7 +9,7 @@ use aws_sdk_s3::Client as S3Client;
 use axum::Router;
 use axum::http::Method;
 use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
-use axum::routing::{get, post};
+use axum::routing::{get, post, put};
 use forum_core::{
     CdnSigner, ForumRepository, S3Store, S3Uploader, SqsClient, get_parameter, get_parameter_secret,
 };
@@ -118,7 +118,7 @@ async fn main() -> Result<(), Error> {
                 .route("/posts", get(list_posts_handler).post(create_post_handler))
                 .route(
                     "/posts/{post_id}",
-                    post(update_post_handler).delete(delete_post_handler),
+                    put(update_post_handler).delete(delete_post_handler),
                 )
                 .route(
                     "/posts/{post_id}/comments",
@@ -126,7 +126,7 @@ async fn main() -> Result<(), Error> {
                 )
                 .route(
                     "/posts/{post_id}/comments/{comment_sk}",
-                    post(update_comment_handler).delete(delete_comment_handler),
+                    put(update_comment_handler).delete(delete_comment_handler),
                 )
                 .route("/posts/upload", post(presign_upload_handler))
                 .with_state(state),
