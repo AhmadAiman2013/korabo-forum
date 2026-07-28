@@ -315,10 +315,17 @@ pub async fn presign_upload_handler(
 
     state.repo.assert_group_member(&group_id, user_id).await?;
 
+    let safe_file_name = sanitize_filename(&file_name);
+    let safe_file_name = if safe_file_name.trim_matches('_').is_empty() {
+        "file".to_string()
+    } else {
+        safe_file_name
+    };
+
     let key = format!(
         "forum-uploads/{group_id}/{user_id}/{}-{}",
         uuid::Uuid::new_v4(),
-        file_name
+        safe_file_name
     );
 
     let presigned = state
@@ -328,6 +335,28 @@ pub async fn presign_upload_handler(
         .await?;
 
     Ok((StatusCode::OK, Json(json!({ "body": presigned }))))
+}
+
+fn sanitize_filename(name: &str) -> String {
+    let cleaned: String = name
+        .chars()
+        .map(|c| if c.is_alphanumeric() || matches!(c, '.' | '-' | '_') { c } else { '_' })
+        .collect();
+    // collapse consecutive underscores
+    let mut result = String::with_capacity(cleaned.len());
+    let mut last_was_underscore = false;
+    for c in cleaned.chars() {
+        if c == '_' {
+            if !last_was_underscore {
+                result.push(c);
+            }
+            last_was_underscore = true;
+        } else {
+            result.push(c);
+            last_was_underscore = false;
+        }
+    }
+    result
 }
 
 async fn send_deleted_attachment_sqs(
