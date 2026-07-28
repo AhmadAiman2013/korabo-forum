@@ -41,6 +41,7 @@ impl S3Store {
         key: &str,
         content_type: &str,
         content_length: i64,
+        content_disposition: Option<String>,
     ) -> Result<PresignedUpload, ForumError> {
         if content_length <= 0 || content_length > MAX_UPLOAD_BYTES {
             return Err(ForumError::General(format!(
@@ -51,13 +52,19 @@ impl S3Store {
         let expires_in_secs = 300u64;
         let presign_config = PresigningConfig::expires_in(Duration::from_secs(expires_in_secs))?;
 
-        let req = self
+        let mut req = self
             .client
             .put_object()
             .bucket(&self.bucket)
             .key(key)
             .content_type(content_type)
-            .content_length(content_length)
+            .content_length(content_length);
+
+        if let Some(disposition) = content_disposition {
+            req = req.content_disposition(disposition);
+        }
+
+        let req = req
             .presigned(presign_config)
             .await
             .map_err(|e| e.into_service_error())?;

@@ -328,10 +328,16 @@ pub async fn presign_upload_handler(
         safe_file_name
     );
 
+    let disposition = if content_type.starts_with("image/") {
+        None // let images render inline in the browser
+    } else {
+        Some(format!("attachment; filename=\"{}\"", safe_file_name))
+    };
+
     let presigned = state
         .s3
         .store
-        .presign_upload(&key, &content_type, content_length)
+        .presign_upload(&key, &content_type, content_length, disposition)
         .await?;
 
     Ok((StatusCode::OK, Json(json!({ "body": presigned }))))
