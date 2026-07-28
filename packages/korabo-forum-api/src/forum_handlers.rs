@@ -247,6 +247,7 @@ pub async fn update_comment_handler(
         body,
         attachments,
     } = body;
+    println!("Comment SK: {}", comment_sk);
 
     let post = state.repo.get_post(&post_id).await?;
     state.repo.assert_group_member(&post.group_id, user_id).await?;
