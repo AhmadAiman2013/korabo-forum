@@ -339,11 +339,14 @@ impl ForumRepository {
 
         let resp = query.send().await.map_err(|e| e.into_service_error())?;
 
-        let Some(items) = resp.items else {
+        let items = resp.items.unwrap_or_default();
+        if items.is_empty() {
             return Ok((Vec::new(), None));
-        };
+        }
 
-        let comments = from_items(items)?;
+        // deserialize into the storage shape (has PK/SK renames), then convert
+        let comment_items: Vec<CommentItem> = from_items(items)?;
+        let comments: Vec<Comment> = comment_items.into_iter().map(Comment::from).collect();
 
         let next_cursor = resp.last_evaluated_key.map(encode_cursor).transpose()?;
 
