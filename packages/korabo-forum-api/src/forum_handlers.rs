@@ -1,7 +1,7 @@
 use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
-use forum_core::{Attachment, CreateCommentRequest, CreatePostRequest, ForumError, ForumEvent, ForumRepository, ListCommentsRequest, ListPostsRequest, PresignUploadRequest, ResponseError, S3Uploader, SqsClient, UpdateCommentRequest, UpdatePostRequest};
+use forum_core::{Attachment, CreateCommentRequest, CreatePostRequest, DeleteCommentsRequestParam, ForumError, ForumEvent, ForumRepository, ListCommentsRequest, ListPostsRequest, PresignUploadRequest, ResponseError, S3Uploader, SqsClient, UpdateCommentRequest, UpdateCommentsRequestParam, UpdatePostRequest};
 use jwt::{AuthClaims, JwtPublicKey};
 use serde_json::{Value, json};
 use std::collections::HashSet;
@@ -239,7 +239,8 @@ pub async fn list_comments_handler(
 pub async fn update_comment_handler(
     State(state): State<AppState>,
     AuthClaims(claims): AuthClaims,
-    Path((post_id, comment_sk)): Path<(String, String)>,
+    Path(post_id): Path<String>,
+    Query(params): Query<UpdateCommentsRequestParam>,
     Json(body): Json<UpdateCommentRequest>,
 ) -> Result<(StatusCode, Json<Value>), ResponseError> {
     let user_id = &claims.sub;
@@ -247,7 +248,12 @@ pub async fn update_comment_handler(
         body,
         attachments,
     } = body;
-    println!("Comment SK: {}", comment_sk);
+    let UpdateCommentsRequestParam {
+        comment_id,
+        created_at,
+    } = params;
+    
+    let comment_sk = format!("COMMENT#{}#{}", created_at, comment_id);
 
     let post = state.repo.get_post(&post_id).await?;
     state.repo.assert_group_member(&post.group_id, user_id).await?;
@@ -284,9 +290,16 @@ pub async fn update_comment_handler(
 pub async fn delete_comment_handler(
     State(state): State<AppState>,
     AuthClaims(claims): AuthClaims,
-    Path((post_id, comment_sk)): Path<(String, String)>,
+    Path(post_id): Path<String>,
+    Query(params): Query<DeleteCommentsRequestParam>,
 ) -> Result<StatusCode, ResponseError> {
     let user_id = &claims.sub;
+    let DeleteCommentsRequestParam {
+        comment_id,
+        created_at,
+    } = params;
+    
+    let comment_sk = format!("COMMENT#{}#{}", created_at, comment_id);
 
     let post = state.repo.get_post(&post_id).await?;
     state.repo.assert_group_member(&post.group_id, user_id).await?;

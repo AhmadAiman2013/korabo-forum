@@ -122,11 +122,7 @@ async fn main() -> Result<(), Error> {
                 )
                 .route(
                     "/posts/{post_id}/comments",
-                    get(list_comments_handler).post(create_comment_handler),
-                )
-                .route(
-                    "/posts/{post_id}/comments/{comment_sk}",
-                    put(update_comment_handler).delete(delete_comment_handler),
+                    get(list_comments_handler).post(create_comment_handler).put(update_comment_handler).delete(delete_comment_handler),
                 )
                 .route("/posts/upload", post(presign_upload_handler))
                 .with_state(state),

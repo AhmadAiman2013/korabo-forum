@@ -71,9 +71,21 @@ pub struct UpdatePostRequest {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct UpdateCommentsRequestParam {
+    pub comment_id: String,
+    pub created_at: String,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct UpdateCommentRequest {
     pub body: String,
     pub attachments: Vec<Attachment>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct DeleteCommentsRequestParam {
+    pub comment_id: String,
+    pub created_at: String,
 }
 
 #[derive(Deserialize, Debug)]
