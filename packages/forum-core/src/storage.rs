@@ -38,6 +38,7 @@ impl S3Store {
     /// the check below.
     pub async fn presign_upload(
         &self,
+        safe_file_name: &str,
         key: &str,
         content_type: &str,
         content_length: i64,
@@ -73,6 +74,7 @@ impl S3Store {
             upload_url: req.uri().to_string(),
             key: key.to_string(),
             expires_in_secs,
+            file_name: safe_file_name.to_string(),
         })
     }
 

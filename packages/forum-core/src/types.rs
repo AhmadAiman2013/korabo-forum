@@ -171,6 +171,7 @@ pub struct PresignedUpload {
     pub upload_url: String,
     pub key: String,
     pub expires_in_secs: u64,
+    pub file_name: String
 }
 
 

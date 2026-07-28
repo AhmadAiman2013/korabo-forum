@@ -337,7 +337,7 @@ pub async fn presign_upload_handler(
     let presigned = state
         .s3
         .store
-        .presign_upload(&key, &content_type, content_length, disposition)
+        .presign_upload(&safe_file_name, &key, &content_type, content_length, disposition)
         .await?;
 
     Ok((StatusCode::OK, Json(json!({ "body": presigned }))))
